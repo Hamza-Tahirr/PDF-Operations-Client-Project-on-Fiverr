@@ -1,5 +1,5 @@
 # /app.py
-from flask import Flask, request, send_file, render_template, url_for, send_from_directory, jsonify
+from flask import Flask, request, send_file, render_template, url_for, send_from_directory
 import fitz  # PyMuPDF
 import os
 import re
@@ -92,13 +92,6 @@ def serve_pdf(filename):
 @app.route('/download/<filename>')
 def download_file(filename):
     return send_file(os.path.join('uploads', filename), as_attachment=True)
-
-# New endpoint for printing only selected images
-@app.route('/print_selected', methods=['POST'])
-def print_selected():
-    selected_images = request.json.get('selected_images', [])
-    # This will contain logic to print only the selected images (not implemented fully)
-    return jsonify({'message': 'Print functionality is triggered.', 'selected_images': selected_images})
 
 if __name__ == '__main__':
     os.makedirs('uploads', exist_ok=True)

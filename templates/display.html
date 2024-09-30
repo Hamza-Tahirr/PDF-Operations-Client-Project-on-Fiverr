@@ -16,6 +16,7 @@
         }
         .pdf-container {
             position: relative;
+            margin-top: 20px;
         }
     </style>
 </head>
@@ -30,7 +31,8 @@
             <!-- Display checkboxes above images -->
             {% for image in images %}
                 <input type="checkbox" class="image-checkbox" 
-                    style="top: {{ image.y0|default(0) }}px; left: {{ image.x0|default(0) }}px;">
+                    style="top: {{ image.y0 }}px; left: {{ image.x0 }}px;" 
+                    data-image-index="{{ loop.index }}">
             {% endfor %}
         </div>
 
