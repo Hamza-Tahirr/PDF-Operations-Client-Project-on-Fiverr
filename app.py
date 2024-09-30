@@ -9,19 +9,21 @@ app = Flask(__name__)
 def replace_names_in_pdf(input_pdf_path, output_pdf_path):
     doc = fitz.open(input_pdf_path)
 
-    # Regex pattern to match "Last, First" (e.g., Adams, Brie)
-    pattern = re.compile(r'(\b[A-Z][a-zA-Z]+), (\b[A-Z][a-zA-Z]+)')
+    # Regex pattern to match "Last, First Middle" (handles multiple first/middle names)
+    name_pattern = re.compile(r'(\b[A-Z][a-zA-Z]+), ([A-Z][a-zA-Z]+(?: [A-Z][a-zA-Z]+)*)')
+    word_to_remove = "Individual"  # Word to be removed
 
     for page in doc:
         # Extract full text from the page
         text = page.get_text("text")
         
-        # Find all matches for "Last, First" pattern
-        matches = pattern.finditer(text)
+        # Find all matches for "Last, First Middle" pattern
+        name_matches = name_pattern.finditer(text)
         
-        for match in matches:
-            last_name, first_name = match.groups()
-            new_name = f"{first_name} {last_name}"
+        for match in name_matches:
+            last_name = match.group(1)  # Last name
+            first_middle_names = match.group(2)  # First and any middle names
+            new_name = f"{first_middle_names} {last_name}"
 
             # Get the position of the text in the PDF
             areas = page.search_for(match.group())
@@ -32,6 +34,16 @@ def replace_names_in_pdf(input_pdf_path, output_pdf_path):
 
                 # Insert the new name in the same position (adjust position and size if needed)
                 page.insert_text(inst[:2], new_name, fontsize=12, fontname="helv")
+
+        # Search for the word "Individual"
+        individual_areas = page.search_for(word_to_remove)
+        for inst in individual_areas:
+            # Redact the word "Individual" and replace with space
+            page.add_redact_annot(inst, fill=(1, 1, 1))  # White out the word
+            page.apply_redactions()
+
+            # Optionally, you can leave this space empty, or just replace it with an actual space.
+            page.insert_text(inst[:2], " ", fontsize=12, fontname="helv")
 
     # Save the modified PDF
     doc.save(output_pdf_path)
@@ -57,7 +69,7 @@ def upload_file():
     # Save the uploaded file
     file.save(input_pdf_path)
 
-    # Replace names in the PDF
+    # Replace names in the PDF and remove the word "Individual"
     replace_names_in_pdf(input_pdf_path, output_pdf_path)
 
     # Return the modified PDF to the user
