@@ -29,13 +29,15 @@
 
             <!-- Display checkboxes above images -->
             {% for image in images %}
-                <input type="checkbox" class="image-checkbox" style="top: {{ image.y0 }}px; left: {{ image.x0 }}px;">
+                <input type="checkbox" class="image-checkbox" 
+                    style="top: {{ image.y0|default(0) }}px; left: {{ image.x0|default(0) }}px;">
             {% endfor %}
         </div>
 
         <!-- Download button -->
         <div class="text-center mt-3">
             <a href="{{ url_for('download_file', filename='modified_' + request.args.get('filename')) }}" class="btn btn-success">Download PDF</a>
+
         </div>
     </div>
 

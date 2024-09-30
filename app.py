@@ -86,7 +86,12 @@ def upload_file():
     images_on_pages = replace_names_in_pdf(input_pdf_path, output_pdf_path)
 
     # Display the modified PDF
-    return render_template('display.html', pdf_url=url_for('serve_pdf', filename=f'modified_{file.filename}'), images=images_on_pages)
+    return render_template(
+        'display.html', 
+        pdf_url=url_for('serve_pdf', filename=f'modified_{file.filename}'), 
+        images=images_on_pages,
+        filename=file.filename  # Pass the filename to the template
+    )
 
 @app.route('/uploads/<filename>')
 def serve_pdf(filename):
