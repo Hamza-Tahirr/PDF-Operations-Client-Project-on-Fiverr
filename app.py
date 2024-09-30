@@ -1,100 +1,68 @@
+# /app.py
+from flask import Flask, request, send_file, render_template
+import fitz  # PyMuPDF
 import os
-from flask import Flask, render_template, request, redirect, send_file
-import fitz 
-from io import BytesIO
+import re
 
 app = Flask(__name__)
-app.config['UPLOAD_FOLDER'] = 'uploads'
-app.config['ALLOWED_EXTENSIONS'] = {'pdf'}
 
-# Ensure the upload folder exists
-os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+def replace_names_in_pdf(input_pdf_path, output_pdf_path):
+    doc = fitz.open(input_pdf_path)
 
-def allowed_file(filename):
-    return '.' in filename and filename.rsplit('.', 1)[1].lower() in app.config['ALLOWED_EXTENSIONS']
+    # Regex pattern to match "Last, First" (e.g., Adams, Brie)
+    pattern = re.compile(r'(\b[A-Z][a-zA-Z]+), (\b[A-Z][a-zA-Z]+)')
 
-def format_names(text):
-    # Split text by lines and format each name
-    formatted_names = []
-    for line in text.splitlines():
-        if ',' in line:
-            last_name, first_name = line.split(',', 1)
-            formatted_names.append(f"{first_name.strip()} {last_name.strip()}")
-    return formatted_names
-
-def replace_names_in_pdf(doc, formatted_names):
-    for page_num in range(len(doc)):
-        page = doc.load_page(page_num)
-        text_instances = page.get_text("text").splitlines()
+    for page in doc:
+        # Extract full text from the page
+        text = page.get_text("text")
         
-        # Replace old names with new formatted names
-        for i, old_name in enumerate(text_instances):
-            if ',' in old_name:
-                formatted_name = format_names(old_name)
-                if formatted_name:
-                    rects = page.search_for(old_name)
-                    for name in formatted_name:
-                        for rect in rects:
-                            page.insert_text(rect[:2], name, fontsize=12)  # Adjust fontsize as needed
-                            # Now, find and remove the next line if it still contains a comma-separated name
-                            if i + 1 < len(text_instances) and ',' in text_instances[i + 1]:
-                                remove_comma_separated_line(page, text_instances[i + 1])
-
-        page.apply_redactions()
-
-def remove_comma_separated_line(page, line):
-    # Find and remove lines containing comma-separated names (after replacement)
-    rects = page.search_for(line)
-    for rect in rects:
-        page.add_redact_annot(rect, fill=[255, 255, 255])
-
-def remove_word_from_pdf(file, word):
-    # Open the uploaded PDF
-    doc = fitz.open(stream=file.read(), filetype="pdf")
-    
-    # Step 1: Remove the word "Individual"
-    for page_num in range(len(doc)):
-        page = doc.load_page(page_num)
-        text_instances = page.search_for(word)
+        # Find all matches for "Last, First" pattern
+        matches = pattern.finditer(text)
         
-        for inst in text_instances:
-            page.add_redact_annot(inst, fill=[255, 255, 255])
-    
-    # Extract all text from the PDF
-    all_text = ""
-    for page_num in range(len(doc)):
-        all_text += doc[page_num].get_text()
+        for match in matches:
+            last_name, first_name = match.groups()
+            new_name = f"{first_name} {last_name}"
 
-    formatted_names = format_names(all_text)
+            # Get the position of the text in the PDF
+            areas = page.search_for(match.group())
+            for inst in areas:
+                # Redact the old name
+                page.add_redact_annot(inst, fill=(1, 1, 1))  # White out old name
+                page.apply_redactions()
 
-    # Step 2: Replace names in PDF with formatted names
-    replace_names_in_pdf(doc, formatted_names)
+                # Insert the new name in the same position (adjust position and size if needed)
+                page.insert_text(inst[:2], new_name, fontsize=12, fontname="helv")
 
-    output_pdf = BytesIO()
-    doc.save(output_pdf)
-    output_pdf.seek(0)
-    return output_pdf
-
-
+    # Save the modified PDF
+    doc.save(output_pdf_path)
+    doc.close()
 
 @app.route('/')
 def index():
-    return render_template('index.html')
+    return render_template('upload.html')
 
 @app.route('/upload', methods=['POST'])
 def upload_file():
     if 'file' not in request.files:
-        return redirect(request.url)
-    
+        return "No file part", 400
+
     file = request.files['file']
+    
+    if file.filename == '':
+        return "No selected file", 400
 
-    if file.filename == '' or not allowed_file(file.filename):
-        return redirect(request.url)
+    input_pdf_path = os.path.join('uploads', file.filename)
+    output_pdf_path = os.path.join('uploads', f'modified_{file.filename}')
 
-    # Remove both "Individual" and comma-separated names
-    modified_pdf = remove_word_from_pdf(file, 'Individual')
+    # Save the uploaded file
+    file.save(input_pdf_path)
 
-    return send_file(modified_pdf, download_name='modified.pdf', as_attachment=True)
+    # Replace names in the PDF
+    replace_names_in_pdf(input_pdf_path, output_pdf_path)
 
-if __name__ == '__main__': 
+    # Return the modified PDF to the user
+    return send_file(output_pdf_path, as_attachment=True)
+
+if __name__ == '__main__':
+    os.makedirs('uploads', exist_ok=True)
     app.run(debug=True)
