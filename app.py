@@ -1,4 +1,3 @@
-# /app.py
 from flask import Flask, request, send_file, render_template, url_for, send_from_directory
 import fitz  # PyMuPDF
 import os
