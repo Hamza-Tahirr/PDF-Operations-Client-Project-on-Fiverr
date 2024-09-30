@@ -1,6 +1,6 @@
 import os
 from flask import Flask, render_template, request, redirect, send_file
-import fitz  # PyMuPDF
+import fitz 
 from io import BytesIO
 
 app = Flask(__name__)
