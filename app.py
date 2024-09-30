@@ -1,5 +1,5 @@
 # /app.py
-from flask import Flask, request, send_file, render_template, url_for
+from flask import Flask, request, send_file, render_template, url_for, send_from_directory
 import fitz  # PyMuPDF
 import os
 import re
@@ -50,7 +50,11 @@ def replace_names_in_pdf(input_pdf_path, output_pdf_path):
         image_list = page.get_images(full=True)
         for img in image_list:
             img_bbox = fitz.Rect(page.get_image_bbox(img))
-            images_on_pages.append({'page': page_num, 'bbox': img_bbox})
+            images_on_pages.append({
+                'page': page_num,
+                'x0': img_bbox.x0,  # Extract the x0 coordinate
+                'y0': img_bbox.y0   # Extract the y0 coordinate
+            })
 
     # Save the modified PDF
     doc.save(output_pdf_path)
@@ -81,8 +85,13 @@ def upload_file():
     # Replace names in the PDF and remove the word "Individual"
     images_on_pages = replace_names_in_pdf(input_pdf_path, output_pdf_path)
 
-    # Redirect to the display page with the modified PDF and image info
-    return render_template('display.html', pdf_url=url_for('static', filename=f'uploads/modified_{file.filename}'), images=images_on_pages)
+    # Display the modified PDF
+    return render_template('display.html', pdf_url=url_for('serve_pdf', filename=f'modified_{file.filename}'), images=images_on_pages)
+
+@app.route('/uploads/<filename>')
+def serve_pdf(filename):
+    # Serve the modified PDF from the uploads directory
+    return send_from_directory('uploads', filename)
 
 @app.route('/download/<filename>')
 def download_file(filename):
