@@ -36,8 +36,7 @@
 
         <!-- Download button -->
         <div class="text-center mt-3">
-            <a href="{{ url_for('download_file', filename='modified_' + request.args.get('filename')) }}" class="btn btn-success">Download PDF</a>
-
+            <a href="{{ url_for('download_file', filename=filename) }}" class="btn btn-success">Download PDF</a>
         </div>
     </div>
 
