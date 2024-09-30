@@ -6,32 +6,14 @@
     <title>Display PDF</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
-        iframe {
-            width: 100%;
-            height: 500px;
-        }
         .image-checkbox {
             position: absolute;
             transform: translate(-50%, -50%);
         }
         .pdf-container {
             position: relative;
-            margin-top: 20px;
-        }
-        @media print {
-            body * {
-                visibility: hidden;
-            }
-            .print-area {
-                visibility: visible;
-                position: absolute;
-                top: 0;
-                left: 0;
-                width: 100%;
-            }
-            iframe {
-                display: none;
-            }
+            height: 800px; /* Ensure height is large enough */
+            width: 100%;
         }
     </style>
 </head>
@@ -39,15 +21,19 @@
     <div class="container mt-5">
         <h1 class="text-center">Modified PDF</h1>
 
-        <!-- Display PDF in an iframe -->
+        <!-- PDF Container -->
         <div class="pdf-container">
-            <iframe src="{{ pdf_url }}" frameborder="0"></iframe>
+            <iframe src="{{ pdf_url }}" style="width: 100%; height: 800px;" frameborder="0"></iframe>
 
-            <!-- Display checkboxes above images -->
+            <!-- Dynamically render checkboxes based on image coordinates -->
             {% for image in images %}
                 <input type="checkbox" class="image-checkbox" 
-                    style="top: {{ image.y0 }}px; left: {{ image.x0 }}px;" 
-                    data-image-index="{{ loop.index }}" onclick="togglePrintImage('{{ image.x0 }}', '{{ image.y0 }}', '{{ image.width }}', '{{ image.height }}')">
+                       data-page="{{ image.page }}" 
+                       data-x0="{{ image.x0 }}" 
+                       data-y0="{{ image.y0 }}"
+                       data-x1="{{ image.x1 }}" 
+                       data-y1="{{ image.y1 }}"
+                       style="top: {{ image.y0 }}px; left: {{ image.x0 }}px;">
             {% endfor %}
         </div>
 
@@ -55,35 +41,34 @@
         <div class="text-center mt-3">
             <a href="{{ url_for('download_file', filename=filename) }}" class="btn btn-success">Download PDF</a>
         </div>
-
-        <!-- Print button -->
-        <div class="text-center mt-3">
-            <button class="btn btn-primary" onclick="window.print()">Print Selected Images</button>
-        </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        function togglePrintImage(x, y, width, height) {
-            var printArea = document.createElement('div');
-            printArea.classList.add('print-area');
-            printArea.style.position = 'absolute';
-            printArea.style.top = y + 'px';
-            printArea.style.left = x + 'px';
-            printArea.style.width = width + 'px';
-            printArea.style.height = height + 'px';
+        // Handle print functionality: Only print selected images
+        document.addEventListener('keydown', function(event) {
+            if (event.ctrlKey && event.key === 'p') {
+                event.preventDefault();
+                const checkboxes = document.querySelectorAll('.image-checkbox:checked');
+                
+                if (checkboxes.length === 0) {
+                    alert('No images selected for printing.');
+                    return;
+                }
 
-            if (event.target.checked) {
-                document.body.appendChild(printArea);
-            } else {
-                var elements = document.getElementsByClassName('print-area');
-                Array.from(elements).forEach(function (element) {
-                    if (element.style.top === y + 'px' && element.style.left === x + 'px') {
-                        element.remove();
-                    }
-                });
+                // Collect coordinates of selected images
+                const selectedImages = Array.from(checkboxes).map(cb => ({
+                    page: cb.getAttribute('data-page'),
+                    x0: cb.getAttribute('data-x0'),
+                    y0: cb.getAttribute('data-y0'),
+                    x1: cb.getAttribute('data-x1'),
+                    y1: cb.getAttribute('data-y1')
+                }));
+
+                // Send these coordinates to the server or handle printing
+                console.log(selectedImages);
+                // Implement custom logic for printing selected images
             }
-        }
+        });
     </script>
 </body>
 </html>
