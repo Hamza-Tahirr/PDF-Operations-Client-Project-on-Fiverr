@@ -1,5 +1,5 @@
 # /app.py
-from flask import Flask, request, send_file, render_template
+from flask import Flask, request, send_file, render_template, url_for
 import fitz  # PyMuPDF
 import os
 import re
@@ -12,8 +12,9 @@ def replace_names_in_pdf(input_pdf_path, output_pdf_path):
     # Regex pattern to match "Last, First Middle" (handles multiple first/middle names)
     name_pattern = re.compile(r'(\b[A-Z][a-zA-Z]+), ([A-Z][a-zA-Z]+(?: [A-Z][a-zA-Z]+)*)')
     word_to_remove = "Individual"  # Word to be removed
+    images_on_pages = []
 
-    for page in doc:
+    for page_num, page in enumerate(doc):
         # Extract full text from the page
         text = page.get_text("text")
         
@@ -45,9 +46,17 @@ def replace_names_in_pdf(input_pdf_path, output_pdf_path):
             # Optionally, you can leave this space empty, or just replace it with an actual space.
             page.insert_text(inst[:2], " ", fontsize=12, fontname="helv")
 
+        # Search for images and store their bounding boxes
+        image_list = page.get_images(full=True)
+        for img in image_list:
+            img_bbox = fitz.Rect(page.get_image_bbox(img))
+            images_on_pages.append({'page': page_num, 'bbox': img_bbox})
+
     # Save the modified PDF
     doc.save(output_pdf_path)
     doc.close()
+
+    return images_on_pages  # Return the list of images to display checkboxes
 
 @app.route('/')
 def index():
@@ -70,10 +79,14 @@ def upload_file():
     file.save(input_pdf_path)
 
     # Replace names in the PDF and remove the word "Individual"
-    replace_names_in_pdf(input_pdf_path, output_pdf_path)
+    images_on_pages = replace_names_in_pdf(input_pdf_path, output_pdf_path)
 
-    # Return the modified PDF to the user
-    return send_file(output_pdf_path, as_attachment=True)
+    # Redirect to the display page with the modified PDF and image info
+    return render_template('display.html', pdf_url=url_for('static', filename=f'uploads/modified_{file.filename}'), images=images_on_pages)
+
+@app.route('/download/<filename>')
+def download_file(filename):
+    return send_file(os.path.join('uploads', filename), as_attachment=True)
 
 if __name__ == '__main__':
     os.makedirs('uploads', exist_ok=True)
