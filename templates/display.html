@@ -3,17 +3,26 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-    <title>Display PDF</title>
+    <title>Display PDF with Checkboxes</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
-        .image-checkbox {
-            position: absolute;
-            transform: translate(-50%, -50%);
-        }
         .pdf-container {
             position: relative;
             height: 800px;
             width: 100%;
+        }
+
+        .image-checkbox {
+            position: absolute;
+            transform: translate(-50%, -50%);
+        }
+
+        iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
         }
     </style>
 </head>
@@ -22,16 +31,18 @@
         <h1 class="text-center">Modified PDF</h1>
 
         <div class="pdf-container">
-            <iframe src="{{ pdf_url }}" style="width: 100%; height: 800px;" frameborder="0"></iframe>
+            <!-- PDF iframe -->
+            <iframe src="{{ pdf_url }}" frameborder="0"></iframe>
 
+            <!-- Dynamically generated checkboxes based on image coordinates -->
             {% for image in images %}
-                <input type="checkbox" class="image-checkbox" 
-                       data-page="{{ image.page }}" 
-                       data-x0="{{ image.x0 }}" 
+                <input type="checkbox" class="image-checkbox"
+                       data-page="{{ image.page }}"
+                       data-x0="{{ image.x0 }}"
                        data-y0="{{ image.y0 }}"
-                       data-x1="{{ image.x1 }}" 
+                       data-x1="{{ image.x1 }}"
                        data-y1="{{ image.y1 }}"
-                       style="top: {{ image.y0 }}px; left: {{ image.x0 }}px;">
+                       style="top: calc({{ image.y0 }}px / 1.33); left: calc({{ image.x0 }}px / 1.33);">
             {% endfor %}
         </div>
 
@@ -44,8 +55,8 @@
         document.addEventListener('keydown', function(event) {
             if (event.ctrlKey && event.key === 'p') {
                 event.preventDefault();
+
                 const checkboxes = document.querySelectorAll('.image-checkbox:checked');
-                
                 if (checkboxes.length === 0) {
                     alert('No images selected for printing.');
                     return;
@@ -65,3 +76,4 @@
     </script>
 </body>
 </html>
+ 

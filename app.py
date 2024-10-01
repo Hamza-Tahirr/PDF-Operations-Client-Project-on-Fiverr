@@ -1,5 +1,4 @@
-# /app.py
-from flask import Flask, request, send_file, render_template, url_for, send_from_directory
+from flask import Flask, request, send_file, render_template, url_for, send_from_directory, jsonify
 import fitz  # PyMuPDF
 import os
 import re
@@ -75,10 +74,6 @@ def replace_names_in_pdf(input_pdf_path, output_pdf_path):
                     'image_path': image_path
                 })
 
-                # Print the image coordinates to the console
-                print(f"Image {image_number} extracted on page {page_num + 1}: "
-                      f"Coordinates: ({img_bbox.x0}, {img_bbox.y0}, {img_bbox.x1}, {img_bbox.y1})")
-
     doc.save(output_pdf_path)
     doc.close()
 
@@ -119,6 +114,11 @@ def serve_pdf(filename):
 @app.route('/download/<filename>')
 def download_file(filename):
     return send_file(os.path.join('uploads', filename), as_attachment=True)
+
+# Serve individual images
+@app.route('/image/<image_name>')
+def serve_image(image_name):
+    return send_from_directory('uploads', image_name)
 
 if __name__ == '__main__':
     os.makedirs('uploads', exist_ok=True)
