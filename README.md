@@ -23,7 +23,7 @@ This is a Flask-based web application that allows users to upload PDF files, aut
 
 1. Clone the repository:
     ```bash
-    git clone [https://github.com/your-username/pdf-redaction-image-extraction.git](https://github.com/Hamza-Tahirr/PDF-Operations-Client-Project-on-Fiverr.git)
+    git clone https://github.com/Hamza-Tahirr/PDF-Operations-Client-Project-on-Fiverr.git
     cd pdf-redaction-image-extraction
     ```
 
