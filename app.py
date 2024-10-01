@@ -6,6 +6,7 @@ from PIL import Image
 import io
 
 app = Flask(__name__)
+app.config['MAX_CONTENT_LENGTH'] = 100 * 1024 * 1024  # 100 MB
 
 UPLOAD_FOLDER = 'uploads'
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
@@ -145,4 +146,4 @@ def serve_image(image_name):
     return send_from_directory(UPLOAD_FOLDER, image_name)
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=True, port=5001)

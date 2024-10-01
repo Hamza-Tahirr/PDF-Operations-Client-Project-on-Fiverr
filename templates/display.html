@@ -29,10 +29,10 @@
                         alt="{{ image.image_name }}" 
                         data-bs-toggle="modal" 
                         data-bs-target="#imageModal" 
-                        onclick="showImage('{{ image_url }}', '{{ image.text_below }}')">
+                        onclick="showImage('{{ image_url }}', '{{ image.image_name }}')">
                     <div class="card-body">
                         <h5 class="card-title">{{ image.image_name }}</h5>
-                        
+                        <!-- <p class="card-text">Text Below: {{ image.text_below }}</p> -->
                     </div>
                 </div>
             </div>
