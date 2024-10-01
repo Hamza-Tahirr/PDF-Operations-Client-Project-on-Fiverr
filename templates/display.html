@@ -12,7 +12,7 @@
         }
         .pdf-container {
             position: relative;
-            height: 800px; /* Ensure height is large enough */
+            height: 800px;
             width: 100%;
         }
     </style>
@@ -21,11 +21,9 @@
     <div class="container mt-5">
         <h1 class="text-center">Modified PDF</h1>
 
-        <!-- PDF Container -->
         <div class="pdf-container">
             <iframe src="{{ pdf_url }}" style="width: 100%; height: 800px;" frameborder="0"></iframe>
 
-            <!-- Dynamically render checkboxes based on image coordinates -->
             {% for image in images %}
                 <input type="checkbox" class="image-checkbox" 
                        data-page="{{ image.page }}" 
@@ -37,14 +35,12 @@
             {% endfor %}
         </div>
 
-        <!-- Download button -->
         <div class="text-center mt-3">
             <a href="{{ url_for('download_file', filename=filename) }}" class="btn btn-success">Download PDF</a>
         </div>
     </div>
 
     <script>
-        // Handle print functionality: Only print selected images
         document.addEventListener('keydown', function(event) {
             if (event.ctrlKey && event.key === 'p') {
                 event.preventDefault();
@@ -55,7 +51,6 @@
                     return;
                 }
 
-                // Collect coordinates of selected images
                 const selectedImages = Array.from(checkboxes).map(cb => ({
                     page: cb.getAttribute('data-page'),
                     x0: cb.getAttribute('data-x0'),
@@ -64,9 +59,7 @@
                     y1: cb.getAttribute('data-y1')
                 }));
 
-                // Send these coordinates to the server or handle printing
                 console.log(selectedImages);
-                // Implement custom logic for printing selected images
             }
         });
     </script>
