@@ -6,7 +6,6 @@ from PIL import Image
 import io
 
 app = Flask(__name__)
-app.config['MAX_CONTENT_LENGTH'] = 100 * 1024 * 1024  # 100 MB
 
 UPLOAD_FOLDER = 'uploads'
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
@@ -20,6 +19,8 @@ def is_circle(bbox):
 def save_image(image_data, image_name):
     """Save image bytes to the uploads directory with the name from the PDF."""
     image = Image.open(io.BytesIO(image_data))
+    # Resize image to 100x100 pixels
+    image = image.resize((100, 100))
     image_path = os.path.join(UPLOAD_FOLDER, f'{image_name}.png')
     image.save(image_path)
     return image_path
@@ -77,7 +78,6 @@ def extract_text_below_images(page):
     text = page.get_text('text')
     lines = text.split('\n')
     
-    # Logic to find text below images can be improved based on specific layout
     for line in lines:
         if line.strip():  # Only process non-empty lines
             text_below_images.append(line.strip())
