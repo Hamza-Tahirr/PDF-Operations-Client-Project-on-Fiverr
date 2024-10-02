@@ -159,5 +159,20 @@ def download_file(filename):
 def serve_image(image_name):
     return send_from_directory(UPLOAD_FOLDER, image_name)
 
+@app.route('/remove')
+def remove():
+    return render_template('remove.html')
+
+@app.route('/remove_upload', methods=['POST'])
+def remove_upload():
+    file = request.files.get('file')
+    
+    if not file or not file.filename:
+        return "No selected file", 400
+    
+    # Logic to handle removal of the uploaded PDF can be added here.
+    
+    return "File removal logic executed"  # Placeholder response for functionality checking
+
 if __name__ == '__main__':
     app.run(debug=True, port=5001)
