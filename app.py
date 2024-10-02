@@ -37,12 +37,12 @@ def redact_names_and_individuals(page, name_pattern, word_to_remove):
         for inst in page.search_for(match.group()):
             page.add_redact_annot(inst, fill=(1, 1, 1))
             page.apply_redactions()
-            page.insert_text(inst[:2], new_name, fontsize=12, fontname="helv")
+            page.insert_text(inst[:2], new_name, fontsize=11, fontname="helv")
 
     for inst in page.search_for(word_to_remove):
         page.add_redact_annot(inst, fill=(1, 1, 1))
         page.apply_redactions()
-        page.insert_text(inst[:2], " ", fontsize=12, fontname="helv")
+        page.insert_text(inst[:2], " ", fontsize=11, fontname="helv")
     
     return names_on_page
 
@@ -95,14 +95,28 @@ def process_pdf(input_pdf_path, output_pdf_path):
     for page_num, page in enumerate(doc):
         names_on_page = redact_names_and_individuals(page, name_pattern, word_to_remove)
         page_images = extract_images_from_page(doc, page, names_on_page)
-        
+
         # Extract text below images and pair it with corresponding images
         texts_below_images = extract_text_below_images(page)
         
         for i in range(len(page_images)):
             if i < len(texts_below_images):
                 page_images[i]['text_below'] = texts_below_images[i]  # Pairing text with images
-        
+            
+            # Adding checkbox above each image
+            checkbox_rect = fitz.Rect(page_images[i]['x0'], page_images[i]['y0'] - 20,
+                                       page_images[i]['x0'] + 15, page_images[i]['y0'])
+            
+            # Create a checkbox widget
+            checkbox_widget = fitz.Widget()
+            checkbox_widget.rect = checkbox_rect
+            checkbox_widget.field_type = fitz.PDF_WIDGET_TYPE_CHECKBOX
+            checkbox_widget.field_name = f"checkbox_{page_num}_{i}"
+            checkbox_widget.field_value = "Off"  # Default state of checkbox
+            
+            # Add widget to the current page using add_widget method
+            page.add_widget(checkbox_widget)
+
         images_on_pages.extend([{'page': page_num, **img} for img in page_images])
 
     doc.save(output_pdf_path)
