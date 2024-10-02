@@ -170,9 +170,63 @@ def remove_upload():
     if not file or not file.filename:
         return "No selected file", 400
     
-    # Logic to handle removal of the uploaded PDF can be added here.
+    input_pdf_path = os.path.join(UPLOAD_FOLDER, file.filename)
     
-    return "File removal logic executed"  # Placeholder response for functionality checking
+    # Save the uploaded file to the uploads directory
+    file.save(input_pdf_path)
+    
+    # Open the PDF for processing
+    doc = fitz.open(input_pdf_path)
+    
+    for page_num in range(len(doc)):
+        page = doc[page_num]
+        
+        # Get all checkboxes on the page
+        for widget in page.widgets():
+            if widget.field_type == fitz.PDF_WIDGET_TYPE_CHECKBOX and widget.field_value == "Yes":  # Check if checkbox is checked
+                checkbox_rect = widget.rect
+                
+                img_rects_to_remove = []
+                text_below_img_rects_to_remove = []
+
+                # Search for images on the page
+                for img in page.get_images(full=True):
+                    xref = img[0]
+                    img_bbox = fitz.Rect(page.get_image_bbox(img))
+                    
+                    # Check if image intersects with the checkbox rectangle
+                    if img_bbox.intersects(checkbox_rect):
+                        img_rects_to_remove.append(img_bbox)
+
+                # Now find text below these images
+                for img_rect in img_rects_to_remove:
+                    text_below_rect = fitz.Rect(img_rect.x0, img_rect.y1, img_rect.x1, img_rect.y1 + 20)  # Adjust height as necessary
+                    
+                    # Extract text within this rectangle
+                    text_instances = page.get_text("text", clip=text_below_rect)
+                    if text_instances.strip():  # If there's any text found
+                        text_below_img_rects_to_remove.append(text_below_rect)
+
+                # Remove images by adding redaction annotations
+                for img_rect in img_rects_to_remove:
+                    page.add_redact_annot(img_rect, fill=(1, 1, 1))  # Fill with white color
+
+                # Remove text by adding redaction annotations
+                for text_rect in text_below_img_rects_to_remove:
+                    page.add_redact_annot(text_rect, fill=(1, 1, 1))  # Fill with white color
+
+        # Apply all redactions on the page
+        page.apply_redactions()
+
+    final_output_pdf_path = os.path.join(UPLOAD_FOLDER, f'final_{file.filename}')
+    doc.save(final_output_pdf_path)  # Save modified PDF
+    doc.close()
+    
+    return render_template('final.html', pdf_url=url_for('serve_pdf', filename=f'final_{file.filename}'))
+        
+@app.route('/final/<filename>')
+def final(filename):
+   return send_file(os.path.join(UPLOAD_FOLDER, filename), as_attachment=True)
 
 if __name__ == '__main__':
-    app.run(debug=True, port=5001)
+   app.run(debug=True, port=5001)
